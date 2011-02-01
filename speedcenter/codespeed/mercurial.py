@@ -29,7 +29,7 @@ def updaterepo(project, update=True):
 
         stdout, stderr = p.communicate()
 
-        if p.returncode != 0:
+        if p.returncode:
             raise RuntimeError("%s returned %s: %s" % (" ".join(cmd),
                                                         p.returncode,
                                                         stderr))

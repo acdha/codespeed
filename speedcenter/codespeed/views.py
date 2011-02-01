@@ -52,7 +52,7 @@ def getbaselineexecutables():
                 'name': name,
             })
     # move default to first place
-    if hasattr(settings, 'def_baseline') and settings.def_baseline != None:
+    if hasattr(settings, 'def_baseline') and settings.def_baseline is not None:
         try:
             for base in baseline:
                 if base['key'] == "none":
@@ -83,12 +83,12 @@ def getdefaultenvironment():
 
 def getdefaultexecutable():
     default = None
-    if hasattr(settings, 'def_executable') and settings.def_executable != None:
+    if hasattr(settings, 'def_executable') and settings.def_executable is not None:
         try:
             default = Executable.objects.get(name=settings.def_executable)
         except Executable.DoesNotExist:
             pass
-    if default == None:
+    if default is None:
         execquery = Executable.objects.filter(project__track=True)
         if len(execquery):
             default = execquery[0]
@@ -134,8 +134,7 @@ def getcomparisondata(request):
 
     executables, exekeys = getcomparisonexes()
 
-    compdata = {}
-    compdata['error'] = "Unknown error"
+    compdata = {'error': "Unknown error"}
     for exe in executables:
         compdata[exe['key']] = {}
         for env in Environment.objects.all():
@@ -356,14 +355,14 @@ def gettimelinedata(request):
             results = []
             for res in resultquery:
                 std_dev = ""
-                if res.std_dev != None:
+                if res.std_dev is not None:
                     std_dev = res.std_dev
                 results.append(
                     [str(res.revision.date), res.value, std_dev, res.revision.get_short_commitid()]
                 )
             timeline['executables'][executable] = results
             append = True
-        if baselinerev != None and append:
+        if baselinerev is not None and append:
             try:
                 baselinevalue = Result.objects.get(
                     executable=baselineexe,
@@ -506,9 +505,9 @@ def changes(request):
     # Configuration of default parameters
     defaultchangethres = 3.0
     defaulttrendthres = 4.0
-    if hasattr(settings, 'change_threshold') and settings.change_threshold != None:
+    if hasattr(settings, 'change_threshold') and settings.change_threshold is not None:
         defaultchangethres = settings.change_threshold
-    if hasattr(settings, 'trend_threshold') and settings.trend_threshold != None:
+    if hasattr(settings, 'trend_threshold') and settings.trend_threshold is not None:
         defaulttrendthres = settings.trend_threshold
 
     defaulttrend = 10

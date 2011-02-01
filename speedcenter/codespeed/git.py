@@ -17,7 +17,7 @@ def updaterepo(project, update=True):
                     cwd=working_copy)
 
         stdout, stderr = p.communicate()
-        if p.returncode != 0:
+        if p.returncode:
             raise RuntimeError("git pull returned %s: %s" % (p.returncode,
                                                                 stderr))
         else:
@@ -28,7 +28,7 @@ def updaterepo(project, update=True):
                     cwd=settings.REPOSITORY_BASE_PATH)
         stdout, stderr = p.communicate()
 
-        if p.returncode != 0:
+        if p.returncode:
             raise RuntimeError("%s returned %s: %s" % (" ".join(cmd),
                                                         p.returncode,
                                                         stderr))
@@ -57,7 +57,7 @@ def getlogs(endrev, startrev):
 
     stdout, stderr = p.communicate()
 
-    if p.returncode != 0:
+    if p.returncode:
         raise RuntimeError("%s returned %s: %s" % (" ".join(cmd),
                                                     p.returncode,
                                                     stderr))

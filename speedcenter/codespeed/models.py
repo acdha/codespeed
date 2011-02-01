@@ -145,7 +145,7 @@ class Report(models.Model):
         # Get default threshold values
         change_threshold = 3.0
         trend_threshold  = 5.0
-        if hasattr(settings, 'change_threshold') and settings.change_threshold != None:
+        if hasattr(settings, 'change_threshold') and settings.change_threshold is not None:
             change_threshold = settings.change_threshold
         if hasattr(settings, 'trend_threshold') and settings.trend_threshold:
             trend_threshold = settings.trend_threshold
@@ -252,7 +252,7 @@ class Report(models.Model):
             colorcode = "red"
         elif val > threshold:
             colorcode = "green"
-        return colorcode;
+        return colorcode
 
     def get_changes_table(self, trend_depth=10, force_save=False):
         # Determine whether required trend value is the default one
@@ -349,7 +349,7 @@ class Report(models.Model):
                             averagecount += 1
                 trend = "-"
                 if average:
-                    average = average / averagecount
+                    average /= averagecount
                     trend =  (result - average)*100/average
                     totals['trend'].append(result / average)
 
@@ -382,7 +382,7 @@ class Report(models.Model):
                 totals['trend'] = (totals['trend'] - 1) * 100#transform ratio to percentage
 
             # Calculate significant digits
-            digits = 2;
+            digits = 2
             while smallest < 1:
                 smallest *= 10
                 digits += 1

@@ -50,7 +50,8 @@ def getlogs(endrev, startrev):
             try:
                 commit_json = json.load(urllib.urlopen(commit_url))
             except IOError, e:
-                logging.exception("Unable to load %s: %s", commit_url, e, exc_info=True)
+                logging.error("Unable to load %s: %s", commit_url, e,
+                                exc_info=True)
                 raise e
 
             if 'error' in commit_json:
