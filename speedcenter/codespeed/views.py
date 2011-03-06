@@ -563,17 +563,21 @@ def changes(request):
         return no_data_found()
 
     selectedrevision = lastrevisions[0]
-    if "rev" in data:
-        commitid = data['rev']
+    if data.get("rev", None):
         try:
             selectedrevision = Revision.objects.get(
-                commitid__startswith=commitid, project=defaultexecutable.project
+                commitid__startswith=data['rev'], project=defaultexecutable.project
             )
             if not selectedrevision in lastrevisions:
                 lastrevisions = list(chain(lastrevisions))
                 lastrevisions.append(selectedrevision)
         except Revision.DoesNotExist:
             selectedrevision = lastrevisions[0]
+            # TODO: Consider whether this should simply be converted into a
+            # changes/<rev id>/ URL structure, which would make a 404 the more
+            # reasonable response
+        except Revision.MultipleObjectsReturned:
+            return HttpResponseBadRequest()
 
     # This variable is used to know when the newly selected executable
     # belongs to another project (project changed) and then trigger the
