@@ -22,10 +22,6 @@ urlpatterns += patterns('speedcenter.codespeed.views',
     (r'^timeline/json/$',   'gettimelinedata'),
     (r'^comparison/$',      'comparison'),
     (r'^comparison/json/$', 'getcomparisondata'),
-)
-
-urlpatterns += patterns('speedcenter.codespeed.views',
-    # URLs for adding results
     (r'^result/add/json/$', 'add_json_results'),
     (r'^result/add/$',      'add_result'),
 )
