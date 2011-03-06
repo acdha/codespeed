@@ -669,17 +669,6 @@ def getcommitlogs(rev, startrev, update=False):
 
     return logs
 
-def saverevisioninfo(rev):
-    log = getcommitlogs(rev, rev, update=True)
-
-    if log:
-        log = log[0]
-        rev.author  = log['author']
-        rev.date    = log['date']
-        rev.message = log['message']
-    else:
-        rev.date = datetime.now()
-
 def validate_result(item):
     '''
     Validates that a result dictionary has all needed parameters
@@ -747,15 +736,23 @@ def save_result(data):
     except Revision.DoesNotExist:
         rev = Revision(project=p, commitid=data['commitid'],
                         date=data.get("revision_date", datetime.now()))
+
+        # Attempt to retrieve revision info from the back-end VCS, since we
+        # want that to always take priority over what the client may have
+        # passed in:
+        try:
+            logs = getcommitlogs(rev, rev, update=True)
+
+            if logs:
+                rev.author  = logs[0]['author']
+                rev.date    = logs[0]['date']
+                rev.message = logs[0]['message']
+        except StandardError, e:
+            logging.warning("unable to save revision %s info: %s", rev, e,
+                            exc_info=True)
+
         rev.full_clean()
         rev.save()
-
-        if not rev.date:
-            try:
-                saverevisioninfo(rev)
-            except StandardError, e:
-                logging.warning("unable to save revision %s info: %s", rev, e,
-                                exc_info=True)
 
     exe, created = Executable.objects.get_or_create(
         name=data['executable'],
