@@ -69,12 +69,13 @@ def getlogs(endrev, startrev):
 
         date = isodate.parse_datetime(commit['committed_date'])
 
+        # We need to convert the timezone-aware date to a naive (i.e.
+        # timezone-less) date in UTC to avoid killing MySQL or the ORM:
+        date = date.astimezone(isodate.tzinfo.Utc()).replace(tzinfo=None)
+
         # Overwrite any existing data we might have for this revision since
         # we never want our records to be out of sync with the actual VCS:
-
-        # We need to convert the timezone-aware date to a naive (i.e.
-        # timezone-less) date in UTC to avoid killing MySQL:
-        revision.date = date.astimezone(isodate.tzinfo.Utc()).replace(tzinfo=None)
+        revision.date = date
         revision.author = commit['author']['name']
         revision.message = commit['message']
         revision.full_clean()
