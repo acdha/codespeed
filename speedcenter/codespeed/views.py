@@ -608,38 +608,6 @@ def reports(request):
         'reports': Report.objects.order_by('-revision__date')[:10],
     }, context_instance=RequestContext(request))
 
-def displaylogs(request):
-    rev = get_object_or_404(Revision, pk=request.GET.get('revisionid'))
-    logs = []
-    logs.append(rev)
-    error = False
-    try:
-        startrev = Revision.objects.filter(
-            project=rev.project
-        ).filter(date__lt=rev.date).order_by('-date')[:1]
-
-        if not len(startrev):
-            startrev = rev
-        else:
-            startrev = startrev[0]
-
-        remotelogs = getcommitlogs(rev, startrev)
-        if len(remotelogs):
-            try:
-                if remotelogs[0]['error']:
-                    error = remotelogs[0]['message']
-            except KeyError:
-                pass#no errors
-            logs = remotelogs
-        else:
-            error = 'no logs found'
-    except StandardError, e:
-        logging.error("Unhandled exception displaying logs for %s: %s", rev, e, exc_info=True)
-        error = repr(e)
-
-    return render_to_response('codespeed/changes_logs.html',
-                                {'error': error, 'logs': logs },
-                                context_instance=RequestContext(request))
 
 def getcommitlogs(rev, startrev, update=False):
     logs = []

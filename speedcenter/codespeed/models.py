@@ -38,6 +38,11 @@ class Revision(models.Model):
     author = models.CharField(max_length=30, blank=True)
     # TODO: Add committer field(s) for DVCSes which make the distinction?
 
+    # TODO: Add a flag which determines whether this has already been
+    #       refreshed from the VCS so we can avoid repeat queries in normal use
+
+    # TODO: Add arbitrary links (JSONField? Related model?) so we can reference external VCS views, CI, code review, etc.
+
     def get_short_commitid(self):
         return self.commitid[:10]
 
