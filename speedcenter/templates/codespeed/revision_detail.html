@@ -1,0 +1,62 @@
+{% extends "site_base.html" %}
+
+{% block title %}
+    Revision {{ object.commitid }} of {{ object.project }}
+{% endblock title %}
+
+{% block page_title %}
+    Revision {{ object.commitid }} of <a href="{% url project-detail object.project.slug %}">{{ object.project }}</a>
+{% endblock page_title %}
+
+{% block body %}
+<table>
+    <tr>
+        <th>ID</th>
+        <td><abbr class="commit-id" title="{{ object.commitid }}">{{ object.short_commit_id|default:object.commitid }}</abbr></td>
+    </tr>
+
+    <tr>
+        <th>Date</th>
+        <td>{{ object.date }}</td>
+    </tr>
+
+    <tr>
+        <th>Author</th>
+        <td class="author fn">
+            {% if object.author_email %}
+                <a href="mailto:{{ object.author_email|urlencode }}">{{ object.author }}</a>
+            {% else %}
+                {{ object.author }}
+            {% endif %}
+        </td>
+    </tr>
+
+    {% if object.links %}
+    <tr>
+        <th>Links</th>
+        <td>
+            <ul class="inline float-right">
+                {% for title, href in object.links.items %}
+                    <li><a href="{{ href }}">{{ title }}</a></li>
+                {% endfor %}
+            </ul>
+        </td>
+    </tr>
+    {% endif %}
+
+    
+    <tr class="message">
+        <th>Message</th>
+        <td><pre>{{ object.message|linebreaksbr|urlize }}</pre></td>
+    </tr>
+    {% if object.body %}
+        <tr class="body">
+            <th>Body</th>
+            <td>
+                <pre>{{ object.body|linebreaksbr|urlize }}</pre>
+            </td>
+        </tr>
+    {% endif %}
+    </tr>
+</table>
+{% endblock body %}

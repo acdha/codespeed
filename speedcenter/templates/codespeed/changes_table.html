@@ -81,7 +81,7 @@
 </table>
 
 {% ifnotequal exe.project.repo_type 'N' %}
-  <table class="revision">
+  <table id="commit-logs" class="revision">
       <col/>
       <col/>
     <thead class="commits">
@@ -89,13 +89,11 @@
         <th colspan="2">Commit logs</th>
       </tr>
     </thead>
-    <tbody class="commits" id="commitid__{{ rev.id }}">
+    <tbody>
       <tr><td colspan="2" style="text-align:center;">Loading... <img src="{{ MEDIA_URL }}images/ajax-loader.gif" align="bottom"></td></tr>
     </tbody>
     <script type="text/javascript">
-      var revisionid = $("tbody.commits").attr("id");
-      loadoption = "revisionid=" + revisionid.split('__')[1];
-      $("#" + revisionid).load("logs/", loadoption);
+      $("#commit-logs tbody").load("{% url revision-detail project=rev.project.slug revision=rev.commitid %}?format=table-fragment");
     </script>
 </table>
 {% endifnotequal %}

@@ -1,0 +1,28 @@
+{% extends "site_base.html" %}
+
+{% block title %}
+    {{ project.name }} Revisions
+{% endblock title %}
+
+{% block page_title %}
+    {{ project.name }} Revisions
+{% endblock page_title %}
+
+{% block body %}
+    <ul id="revision">
+        {% for revision in object_list %}
+            <li><a href="{% url revision-detail project=project.slug revision=revision.commitid %}">{{ revision }}</a></li>
+        {% endfor %}
+    </ul>
+
+    {% if page_obj.has_other_pages %}
+        <nav class="pagination">
+            {% if has_other_pages.has_previous %}
+                <a href="">{{ page_obj.previous_page }}</a>
+            {% endif %}
+            {% if has_other_pages.has_next %}
+                <a href="">{{ page_obj.next_page }}</a>
+            {% endif %}
+        </nav>
+    {% endif %}
+{% endblock body %}

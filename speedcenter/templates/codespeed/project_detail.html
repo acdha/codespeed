@@ -16,6 +16,7 @@
             });
         });
         //Add hover effect to rows
+        // TODO: Move this to CSS
         $("div#reports table tbody tr td").hover(function() {
             $(this).parents('tr').addClass('highlight');
         }, function() {
@@ -24,9 +25,9 @@
     }
 
     $(function() {
-        $("#changes").click(function () { window.location="/changes/"; });
-        $("#timeline").click(function () { window.location="/timeline/"; });
-        $("#comparison").click(function () { window.location="/comparison/"; });
+        $("#changes").click(function () { window.location="{% url changes project=project.slug %}"; });
+        $("#timeline").click(function () { window.location="{% url timeline project=project.slug %}"; });
+        $("#comparison").click(function () { window.location="{% url comparison project=project.slug %}"; });
         $("#reports").html(getLoadText("Loading...", 0, true))
             .load("reports/", function(responseText) { updateTable(); });
   });
@@ -36,15 +37,15 @@
 {% block body %}
 <div id="presentation" class="clearfix">
     <div id="changes" class="menubox">
-      <h2>Changes</h2>
+      <h2><a href="{% url changes project=project.slug %}">Changes</a></h2>
       <p>Track performance changes in the latest revisions</p>
     </div>
     <div id="timeline" class="menubox">
-      <h2>Timeline</h2>
+      <h2><a href="{% url timeline project=project.slug %}">Timeline</a></h2>
       <p>Analyze performance over time</p>
     </div>
     <div id="comparison" class="menubox">
-      <h2>Comparison</h2>
+      <h2><a href="{% url comparison project=project.slug %}">Comparison</a></h2>
       <p>Compare different executables and revisions</p>
     </div>
     <br />
