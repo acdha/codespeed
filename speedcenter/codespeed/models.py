@@ -16,6 +16,8 @@ class Project(models.Model):
     )
 
     name = models.CharField(unique=True, max_length=30)
+    slug = models.SlugField(unique=True, max_length=30)
+
     repo_type = models.CharField("Repository type", max_length=1, choices=REPO_TYPES, default='N')
     repo_path = models.CharField("Repository URL", blank=True, max_length=200)
     repo_user = models.CharField("Repository username", blank=True, max_length=100)
