@@ -27,6 +27,11 @@ class Project(models.Model):
     def __unicode__(self):
         return self.name
 
+    @property
+    def environments(self):
+        # This is nasty but a common need:
+        env_pks = Result.objects.filter(revision__project=self).values_list("environment").distinct()
+        return Environment.objects.filter(pk__in=env_pks)
 
 class Revision(models.Model):
     commitid = models.CharField(max_length=42)#git and mercurial's SHA-1 length is 40

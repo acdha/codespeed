@@ -42,24 +42,30 @@ def no_data_found():
         'message': 'No data found'
     })
 
-def getbaselineexecutables():
+def getbaselineexecutables(project):
     baseline = [{'key': "none", 'name': "None", 'executable': "none", 'revision': "none"}]
-    revs = Revision.objects.exclude(tag="")
-    maxlen = 22
-    for rev in revs:
-        #add executables that correspond to each tagged revision.
-        for exe in Executable.objects.filter(project=rev.project):
+
+    for tagged_revision in project.revisions.exclude(tag=""):
+        exe_pks = Result.objects.filter(revision=tagged_revision).values_list("executable", flat=True).order_by("executable").distinct()
+
+        for exe in Executable.objects.filter(pk__in=exe_pks):
             exestring = str(exe)
-            if len(exestring) > maxlen: exestring = str(exe)[0:maxlen] + "..."
-            name = exestring + " " + rev.tag
-            key = str(exe.id) + "+" + str(rev.id)
+            # BUG: This string formatting should be a templating behaviour
+            if len(exestring) > 19:
+                exestring = "%s..." % exestring[0:22]
+
+            name = "%s %s" % (exestring, tagged_revision.tag)
+            key = "%s+%s" % (exe.pk, tagged_revision.pk)
+
             baseline.append({
                 'key': key,
                 'executable': exe,
-                'revision': rev,
+                'revision': tagged_revision,
                 'name': name,
             })
+
     # move default to first place
+    # BUG: def_baseline should be a property of the project
     if hasattr(settings, 'def_baseline') and settings.def_baseline is not None:
         try:
             for base in baseline:
@@ -75,10 +81,11 @@ def getbaselineexecutables():
             # TODO: write to server logs
             #error in settings.def_baseline
             pass
+
     return baseline
 
-def getdefaultenvironment():
-    default = Environment.objects.all()
+def getdefaultenvironment(project):
+    default = project.environments.all()
     if not len(default):
         return 0
     default = default[0]
@@ -89,7 +96,7 @@ def getdefaultenvironment():
             pass
     return default
 
-def getdefaultexecutable():
+def getdefaultexecutable(project):
     default = None
     if hasattr(settings, 'def_executable') and settings.def_executable is not None:
         try:
@@ -103,12 +110,12 @@ def getdefaultexecutable():
 
     return default
 
-def getcomparisonexes():
+def getcomparisonexes(project):
     executables = []
     executablekeys = []
     maxlen = 20
     # add all tagged revs for any project
-    for exe in getbaselineexecutables():
+    for exe in getbaselineexecutables(project):
         if exe['key'] == "none":
             continue
         executablekeys.append(exe['key'])
@@ -140,11 +147,10 @@ def getcomparisondata(request, project_slug=None):
         return HttpResponseNotAllowed('GET')
 
     project = get_object_or_404(Project, slug=project_slug)
-    raise NotImplementedError()
 
     data = request.GET
 
-    executables, exekeys = getcomparisonexes()
+    executables, exekeys = getcomparisonexes(project)
 
     compdata = {'error': "Unknown error"}
     for exe in executables:
@@ -171,12 +177,12 @@ def comparison(request, project_slug=None):
         return HttpResponseNotAllowed('GET')
 
     project = get_object_or_404(Project, slug=project_slug)
-    raise NotImplementedError()
 
     data = request.GET
 
     # Configuration of default parameters
-    defaultenvironment = getdefaultenvironment()
+    # BUG: default environment, exe, etc. should be project property
+    defaultenvironment = getdefaultenvironment(project)
     if not defaultenvironment:
         return no_environment_error()
     if 'env' in data:
@@ -185,6 +191,7 @@ def comparison(request, project_slug=None):
         except Environment.DoesNotExist:
             pass
 
+    # BUG: This needs to filter on project
     enviros = Environment.objects.all()
     checkedenviros = []
     if 'env' in data:
@@ -201,12 +208,12 @@ def comparison(request, project_slug=None):
     if not len(Project.objects.all()):
         return no_default_project_error()
 
-    defaultexecutable = getdefaultexecutable()
+    defaultexecutable = getdefaultexecutable(project)
 
     if not defaultexecutable:
         return no_executables_error()
 
-    executables, exekeys = getcomparisonexes()
+    executables, exekeys = getcomparisonexes(project)
     checkedexecutables = []
     if 'exe' in data:
         for i in data['exe'].split(","):
@@ -425,7 +432,7 @@ def timeline(request, project_slug=None):
     data = request.GET
 
     # Configuration of default parameters
-    defaultenvironment = getdefaultenvironment()
+    defaultenvironment = getdefaultenvironment(project)
     if not defaultenvironment:
         return no_environment_error()
     if 'env' in data:
@@ -449,7 +456,7 @@ def timeline(request, project_slug=None):
     if not len(checkedexecutables):
         return no_executables_error()
 
-    baseline = getbaselineexecutables()
+    baseline = getbaselineexecutables(project)
     defaultbaseline = None
     if len(baseline) > 1:
         defaultbaseline = str(baseline[1]['executable'].id) + "+"
@@ -546,7 +553,7 @@ def changes(request, project_slug=None):
     if 'tre' in data and int(data['tre']) in trends:
         defaulttrend = int(data['tre'])
 
-    defaultenvironment = getdefaultenvironment()
+    defaultenvironment = getdefaultenvironment(project)
     if not defaultenvironment:
         return no_environment_error()
     if 'env' in data:
@@ -556,7 +563,7 @@ def changes(request, project_slug=None):
             pass
     environments = Environment.objects.all()
 
-    defaultexecutable = getdefaultexecutable()
+    defaultexecutable = getdefaultexecutable(project)
     if not defaultexecutable:
         return no_executables_error()
 
@@ -568,7 +575,7 @@ def changes(request, project_slug=None):
         except ValueError:
             pass
 
-    baseline = getbaselineexecutables()
+    baseline = getbaselineexecutables(project)
     defaultbaseline = "+"
     if len(baseline) > 1:
         defaultbaseline = str(baseline[1]['executable'].id) + "+"
