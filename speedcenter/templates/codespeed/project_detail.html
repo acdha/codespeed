@@ -25,9 +25,9 @@
     }
 
     $(function() {
-        $("#changes").click(function () { window.location="{% url changes project=project.slug %}"; });
-        $("#timeline").click(function () { window.location="{% url timeline project=project.slug %}"; });
-        $("#comparison").click(function () { window.location="{% url comparison project=project.slug %}"; });
+        $("#changes").click(function () { window.location="{% url changes-list project_slug=project.slug %}"; });
+        $("#timeline").click(function () { window.location="{% url timeline project_slug=project.slug %}"; });
+        $("#comparison").click(function () { window.location="{% url comparison project_slug=project.slug %}"; });
         $("#reports").html(getLoadText("Loading...", 0, true))
             .load("reports/", function(responseText) { updateTable(); });
   });
@@ -37,15 +37,15 @@
 {% block body %}
 <div id="presentation" class="clearfix">
     <div id="changes" class="menubox">
-      <h2><a href="{% url changes project=project.slug %}">Changes</a></h2>
+      <h2><a href="{% url changes-list project_slug=project.slug %}">Changes</a></h2>
       <p>Track performance changes in the latest revisions</p>
     </div>
     <div id="timeline" class="menubox">
-      <h2><a href="{% url timeline project=project.slug %}">Timeline</a></h2>
+      <h2><a href="{% url timeline project_slug=project.slug %}">Timeline</a></h2>
       <p>Analyze performance over time</p>
     </div>
     <div id="comparison" class="menubox">
-      <h2><a href="{% url comparison project=project.slug %}">Comparison</a></h2>
+      <h2><a href="{% url comparison project_slug=project.slug %}">Comparison</a></h2>
       <p>Compare different executables and revisions</p>
     </div>
     <br />

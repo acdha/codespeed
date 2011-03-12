@@ -11,7 +11,7 @@
 {% block body %}
     <ul id="revision">
         {% for revision in object_list %}
-            <li><a href="{% url revision-detail project=project.slug revision=revision.commitid %}">{{ revision }}</a></li>
+            <li><a href="{% url revision-detail project_slug=project.slug revision=revision.commitid %}">{{ revision }}</a></li>
         {% endfor %}
     </ul>
 

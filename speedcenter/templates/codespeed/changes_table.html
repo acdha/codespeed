@@ -93,7 +93,7 @@
       <tr><td colspan="2" style="text-align:center;">Loading... <img src="{{ MEDIA_URL }}images/ajax-loader.gif" align="bottom"></td></tr>
     </tbody>
     <script type="text/javascript">
-      $("#commit-logs tbody").load("{% url revision-detail project=rev.project.slug revision=rev.commitid %}?format=table-fragment");
+      $("#commit-logs tbody").load("{% url revision-detail project_slug=rev.project.slug revision=rev.commitid %}?format=table-fragment");
     </script>
 </table>
 {% endifnotequal %}

@@ -15,11 +15,11 @@ from speedcenter.codespeed.models import Environment, Report
 from speedcenter.codespeed.models import Project, Revision, Result, Executable, Benchmark
 
 
-def home(request, project=None, *args, **kwargs):
-    proj = get_object_or_404(Project, slug=project)
-    ec = {"project": proj}
+def home(request, project_slug=None, *args, **kwargs):
+    project = get_object_or_404(Project, slug=project_slug)
+    ec = {"project": project}
     return object_detail(request, queryset=Project.objects.all(),
-                            slug=proj.slug, extra_context=ec,
+                            slug=project.slug, extra_context=ec,
                             *args, **kwargs)
 
 def no_environment_error():
@@ -135,11 +135,11 @@ def getcomparisonexes():
 
     return executables, executablekeys
 
-def getcomparisondata(request, project):
+def getcomparisondata(request, project_slug=None):
     if request.method != 'GET':
         return HttpResponseNotAllowed('GET')
 
-    proj = get_object_or_404(Project, slug=project)
+    project = get_object_or_404(Project, slug=project_slug)
     raise NotImplementedError()
 
     data = request.GET
@@ -166,11 +166,11 @@ def getcomparisondata(request, project):
 
     return HttpResponse(json.dumps( compdata ))
 
-def comparison(request, project=None):
+def comparison(request, project_slug=None):
     if request.method != 'GET':
         return HttpResponseNotAllowed('GET')
 
-    proj = get_object_or_404(Project, slug=project)
+    project = get_object_or_404(Project, slug=project_slug)
     raise NotImplementedError()
 
     data = request.GET
@@ -313,13 +313,12 @@ def comparison(request, project=None):
         'selecteddirection': selecteddirection
     }, context_instance=RequestContext(request))
 
-def gettimelinedata(request, project=None):
+def gettimelinedata(request, project_slug=None):
     if request.method != 'GET':
         return HttpResponseNotAllowed('GET')
     data = request.GET
 
-    proj = get_object_or_404(Project, slug=project)
-    raise NotImplementedError()
+    project = get_object_or_404(Project, slug=project_slug)
 
     timeline_list = {'error': 'None', 'timelines': []}
 
@@ -410,12 +409,11 @@ def gettimelinedata(request, project=None):
         timeline_list['error'] = response
     return HttpResponse(json.dumps( timeline_list ))
 
-def timeline(request, project=None):
+def timeline(request, project_slug=None):
     if request.method != 'GET':
         return HttpResponseNotAllowed('GET')
 
-    proj = get_object_or_404(Project, slug=project)
-    raise NotImplementedError()
+    project = get_object_or_404(Project, slug=project_slug)
 
     data = request.GET
 
@@ -495,7 +493,7 @@ def timeline(request, project=None):
         'environments': environments
     }, context_instance=RequestContext(request))
 
-def getchangestable(request, project=None):
+def getchangestable(request, project_slug=None):
     try:
         proj = Project.objects.get(slug=project)
         executable = proj.executables.get(pk=request.GET.get('exe', None))
@@ -526,11 +524,11 @@ def getchangestable(request, project=None):
         'env': environment,
     }, context_instance=RequestContext(request))
 
-def changes(request, project=None):
+def changes(request, project_slug=None):
     if request.method != 'GET':
         return HttpResponseNotAllowed('GET')
 
-    proj = get_object_or_404(Project, slug=project)
+    project = get_object_or_404(Project, slug=project_slug)
 
     data = request.GET
 
@@ -636,7 +634,7 @@ def revision_detail(request, project=None, revision=None):
     """
     Simple accessor for Revision objects
     """
-    qs = Revision.objects.filter(project__slug=project)
+    qs = Revision.objects.filter(project__slug=project_slug)
 
     # TODO: Remove this outright when we can simply load JSON rather than HTML
     #       fragments
@@ -647,29 +645,29 @@ def revision_detail(request, project=None, revision=None):
 
     return object_detail(request, queryset=qs, slug=revision, slug_field="commitid", template_name=template)
 
-def revision_list(request, project=None):
+def revision_list(request, project_slug=None):
     """
     Simple accessor for Revision objects
     """
 
-    proj = get_object_or_404(Project, slug=project)
+    project = get_object_or_404(Project, slug=project_slug)
 
     ec = {
-        "project": proj,
+        "project": project,
     }
 
-    return object_list(request, queryset=proj.revisions.all(), paginate_by=20, extra_context=ec)
+    return object_list(request, queryset=project.revisions.all(), paginate_by=20, extra_context=ec)
 
 
-def reports(request, project=None):
+def reports(request, project_slug=None):
     if request.method != 'GET':
         return HttpResponseNotAllowed('GET')
 
-    proj = get_object_or_404(Project, slug=project)
+    project = get_object_or_404(Project, slug=project_slug)
 
     return render_to_response('codespeed/reports.html', {
-        'project': proj,
-        'reports': Report.objects.filter(revision__project=proj).order_by('-revision__date')[:10],
+        'project': project,
+        'reports': Report.objects.filter(revision__project=project).order_by('-revision__date')[:10],
     }, context_instance=RequestContext(request))
 
 
