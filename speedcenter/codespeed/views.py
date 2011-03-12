@@ -333,7 +333,11 @@ def gettimelinedata(request, project_slug=None):
     number_of_revs = data.get('revs', 10)
 
     if data['ben'] == 'grid':
-        benchmarks = Benchmark.objects.all().order_by('name')
+        # TODO: This would be a lot easier if we added a foreign key or at
+        #       least a manager method if we want to allow the same benchmark
+        #       to be referenced by multiple projects
+        project_benchmarks = Result.objects.filter(revision__project=project).values_list("benchmark", flat=True).distinct()
+        benchmarks = Benchmark.objects.filter(pk__in=project_benchmarks).order_by("name")
         number_of_revs = 15
     else:
         benchmarks = [get_object_or_404(Benchmark, name=data['ben'])]
@@ -342,8 +346,9 @@ def gettimelinedata(request, project_slug=None):
     baselineexe = None
     if data.get('base') not in (None, 'none', 'undefined'):
         exeid, revid = data['base'].split("+")
-        baselinerev = Revision.objects.get(id=revid)
-        baselineexe = Executable.objects.get(id=exeid)
+        baselinerev = project.revisions.get(id=revid)
+        baselineexe = project.executables.get(id=exeid)
+
     for bench in benchmarks:
         append = False
         lessisbetter = bench.lessisbetter and ' (less is better)' or ' (more is better)'
@@ -359,7 +364,8 @@ def gettimelinedata(request, project_slug=None):
 
         for executable in executables:
             resultquery = Result.objects.filter(
-                    benchmark=bench
+                    benchmark=bench,
+                    revision__project=project
                 ).filter(
                     environment=environment
                 ).filter(
@@ -382,7 +388,7 @@ def gettimelinedata(request, project_slug=None):
             append = True
         if baselinerev is not None and append:
             try:
-                baselinevalue = Result.objects.get(
+                baselinevalue = Result.objects.get(revision__project=project,
                     executable=baselineexe,
                     benchmark=bench,
                     revision=baselinerev,
@@ -402,7 +408,8 @@ def gettimelinedata(request, project_slug=None):
                     [str(start), baselinevalue],
                     [str(end), baselinevalue]
                 ]
-        if append: timeline_list['timelines'].append(timeline)
+        if append:
+            timeline_list['timelines'].append(timeline)
 
     if not len(timeline_list['timelines']):
         response = 'No data found for the selected options'
@@ -426,12 +433,6 @@ def timeline(request, project_slug=None):
             defaultenvironment = Environment.objects.get(name=data['env'])
         except Environment.DoesNotExist:
             pass
-
-    defaultproject = Project.objects.filter(track=True)
-    if not len(defaultproject):
-        return no_default_project_error()
-    else:
-        defaultproject = defaultproject[0]
 
     checkedexecutables = []
     if 'exe' in data:
@@ -495,8 +496,8 @@ def timeline(request, project_slug=None):
 
 def getchangestable(request, project_slug=None):
     try:
-        proj = Project.objects.get(slug=project)
-        executable = proj.executables.get(pk=request.GET.get('exe', None))
+        project = Project.objects.get(slug=project_slug)
+        executable = project.executables.get(pk=request.GET.get('exe', None))
         environment = Environment.objects.get(name=request.GET.get('env', None))
     except ObjectDoesNotExist:
         raise Http404()
@@ -554,12 +555,6 @@ def changes(request, project_slug=None):
         except Environment.DoesNotExist:
             pass
     environments = Environment.objects.all()
-
-    defaultproject = Project.objects.filter(track=True)
-    if not len(defaultproject):
-        return no_default_project_error()
-    else:
-        defaultproject = defaultproject[0]
 
     defaultexecutable = getdefaultexecutable()
     if not defaultexecutable:
@@ -628,9 +623,23 @@ def changes(request, project_slug=None):
         revisionboxes[p.name] = Revision.objects.filter(
             project=p
         ).order_by('-date')[:revlimit]
-    return render_to_response('codespeed/changes.html', locals(), context_instance=RequestContext(request))
 
-def revision_detail(request, project=None, revision=None):
+    return render_to_response('codespeed/changes.html', {
+        "defaultchangethres": defaultchangethres,
+        "defaultenvironment": defaultenvironment,
+        "defaultexecutable": defaultexecutable,
+        "defaulttrend": defaulttrend,
+        "defaulttrendthres": defaulttrendthres,
+        "environments": environments,
+        "executables": executables,
+        "project": project,
+        "projectmatrix": projectmatrix,
+        "revisionboxes": revisionboxes,
+        "selectedrevision": selectedrevision,
+        "trends": trends,
+    }, context_instance=RequestContext(request))
+
+def revision_detail(request, project_slug=None, revision=None):
     """
     Simple accessor for Revision objects
     """

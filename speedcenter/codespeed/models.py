@@ -81,6 +81,8 @@ class Executable(models.Model):
 
 
 class Benchmark(models.Model):
+    # TODO: Consider adding a project foreignkey to simplify filtering
+
     B_TYPES = (
         ('C', 'Cross-project'),
         ('O', 'Own-project'),
