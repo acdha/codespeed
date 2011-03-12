@@ -71,6 +71,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
 )
 
+# TODO: Remove this so clients can set a different log level without having to manually reset logging
 if DEBUG:
     import traceback
     import logging

@@ -29,6 +29,8 @@ urlpatterns += patterns('speedcenter.codespeed.views',
     url(r'^(?P<project_slug>[^/]+)/timeline/json/$',   'gettimelinedata'),
     url(r'^(?P<project_slug>[^/]+)/comparison/$',      'comparison', name="comparison"),
     url(r'^(?P<project_slug>[^/]+)/comparison/json/$', 'getcomparisondata'),
-    url(r'^(?P<project_slug>[^/]+)/result/add/json/$', 'add_json_results'),
-    url(r'^(?P<project_slug>[^/]+)/result/add/$',      'add_result'),
+
+    # TODO: Decide whether to stay backwards compatible with clients or move the add URLs under a project
+    url(r'^result/add/json/$', 'add_json_results'),
+    url(r'^result/add/$',      'add_result'),
 )

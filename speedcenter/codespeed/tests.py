@@ -278,7 +278,43 @@ class Timeline(TestCase):
     def test_gettimelinedata(self):
         """Test that gettimelinedata returns correct timeline data
         """
-        path = reverse('speedcenter.codespeed.views.gettimelinedata')
+        path = reverse('speedcenter.codespeed.views.gettimelinedata',
+                        kwargs={"project_slug": "pypy"})
+        data = {
+            "exe":  "1",
+            "base": "1+1",
+            "ben":  "ai",
+            "env":  "tannit",
+            "revs": 16
+        }
+
+        response = self.client.get(path, data)
+        responsedata = json.loads(response.content)
+
+        self.assertEquals(
+            responsedata['error'], "None", "there should be no errors")
+        self.assertEquals(
+            len(responsedata['timelines']), 1, "there should be 1 benchmark")
+        self.assertEquals(
+            len(responsedata['timelines'][0]['executables']),
+            1,
+            "there should be 1 timeline")
+        self.assertEquals(
+            len(responsedata['timelines'][0]['executables']['1']),
+            16,
+            "There are 16 datapoints")
+        self.assertEquals(
+            responsedata['timelines'][0]['executables']['1'][4],
+            [u'2010-06-17 18:57:39', 0.404776086807, 0.011496530978, u'75443'],
+            "Wrong data returned: ")
+
+    def test_crossproject_timeline(self):
+        """Test a timeline which uses a baseline from a different project
+        """
+        # FIXME: this is currently broken with multi-project support
+
+        path = reverse('speedcenter.codespeed.views.gettimelinedata',
+                        kwargs={"project_slug": "pypy"})
         data = {
             "exe":  "1,2",
             "base": "2+35",
@@ -286,8 +322,10 @@ class Timeline(TestCase):
             "env":  "tannit",
             "revs": 16
         }
+
         response = self.client.get(path, data)
         responsedata = json.loads(response.content)
+
         self.assertEquals(
             responsedata['error'], "None", "there should be no errors")
         self.assertEquals(
