@@ -67,7 +67,7 @@ def save_to_speedcenter(url=None, project=None, commitid=None, executable=None,
     if status == 202:
         logging.debug("Server %s: HTTP %s: %s", url, status, response)
     else:
-        raise IOError("Server %s returned HTTP %s"  % (url, status))
+        raise IOError("Server %s returned HTTP %s: %s"  % (url, status, response))
 
 
 if __name__ == "__main__":
