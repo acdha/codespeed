@@ -1,13 +1,15 @@
 <tr>
     <th class="date infofirst">{{ object.date }}</th>
     <td>
-        {% if object.links %}
-            <ul class="inline float-right">
-                {% for title, href in object.links.items %}
-                    <li><a href="{{ href }}">{{ title }}</a></li>
-                {% endfor %}
-            </ul>
-        {% endif %}
+        {% with object.links.all as links %}
+            {% if links|length %}
+                <ul class="inline float-right">
+                    {% for link in links %}
+                        <li><a href="{{ link.url }}">{{ link.title }}</a></li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
 
         {% if object.author_email %}
             <a class="author fn" href="mailto:{{ object.author_email }}">{{ object.author }}</a>

@@ -46,8 +46,6 @@ class Revision(models.Model):
     # TODO: Add a flag which determines whether this has already been
     #       refreshed from the VCS so we can avoid repeat queries in normal use
 
-    # TODO: Add arbitrary links (JSONField? Related model?) so we can reference external VCS views, CI, code review, etc.
-
     def get_short_commitid(self):
         return self.commitid[:10]
 
@@ -74,6 +72,16 @@ class Revision(models.Model):
             raise ValidationError("Invalid %s commit hash %s" % (
                                     self.project.get_repo_type_display(),
                                     self.commitid))
+
+
+class Link(models.Model):
+    revision = models.ForeignKey(Revision, related_name="links")
+
+    url = models.URLField(blank=False, max_length=500)
+    title = models.CharField(blank=True, max_length=100)
+
+    def __unicode__(self):
+        return u'%s <%s>' % (self.title, self.url)
 
 
 class Executable(models.Model):
