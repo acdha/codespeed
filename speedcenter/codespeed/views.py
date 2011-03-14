@@ -104,7 +104,7 @@ def getdefaultexecutable(project):
         except Executable.DoesNotExist:
             pass
     if default is None:
-        execquery = Executable.objects.filter(project__track=True)
+        execquery = Executable.objects.filter(project=project)
         if len(execquery):
             default = execquery[0]
 
@@ -553,6 +553,7 @@ def changes(request, project_slug=None):
     if 'tre' in data and int(data['tre']) in trends:
         defaulttrend = int(data['tre'])
 
+    # BUG: Only list environments which have been used for this project:
     defaultenvironment = getdefaultenvironment(project)
     if not defaultenvironment:
         return no_environment_error()
@@ -587,10 +588,10 @@ def changes(request, project_slug=None):
             pass
 
     # Information for template
-    executables = Executable.objects.filter(project__track=True)
+    executables = Executable.objects.filter(project=project)
     revlimit = 20
     lastrevisions = Revision.objects.filter(
-        project=defaultexecutable.project
+        project=project
     ).order_by('-date')[:revlimit]
     if not len(lastrevisions):
         return no_data_found()
@@ -774,7 +775,7 @@ def save_result(data):
         assert(isinstance(res, Environment))
         e = res
 
-    p, created = Project.objects.get_or_create(name=data["project"])
+    p, created = Project.objects.get_or_create(slug=data["project"])
     b, created = Benchmark.objects.get_or_create(name=data["benchmark"])
 
     try:
