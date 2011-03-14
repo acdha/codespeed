@@ -818,8 +818,6 @@ def save_result(data):
     r.value = data["result_value"]
     if 'result_date' in data:
         r.date = data["result_date"]
-    elif rev.date:
-        r.date = rev.date
     else:
         r.date = datetime.now()
 
