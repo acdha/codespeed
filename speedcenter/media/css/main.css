@@ -399,7 +399,7 @@ tbody.commits tr td.date {
     text-align: right;
 }
 
-.commits pre {
+.commits pre, .revision pre {
     display: block;
     margin: 2px;
     white-space: pre-wrap;
