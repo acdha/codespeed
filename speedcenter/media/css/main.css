@@ -103,6 +103,11 @@ div#workarea {
 div#presentation {
     text-align: center;
 }
+
+#presentation h2 a {
+    color: inherit;
+}
+
 div#presentation h2, div#presentation h4 { margin-top: 0.2em; margin-bottom: 0.2em; }
 
 div#presentation div {
