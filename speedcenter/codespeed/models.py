@@ -86,9 +86,12 @@ class Link(models.Model):
 
 
 class Executable(models.Model):
-    name = models.CharField(unique=True, max_length=30)
+    name = models.CharField(max_length=30)
     description = models.CharField(max_length=200, blank=True)
     project = models.ForeignKey(Project, related_name="executables")
+
+    class Meta:
+        unique_together = (("project", "name"), )
 
     def __unicode__(self):
         return self.name
