@@ -496,3 +496,28 @@ div.footer a {
 }
 * html .clearfix             { zoom: 1; } /* IE6 */
 *:first-child+html .clearfix { zoom: 1; } /* IE7 */
+
+ul#projects {
+	list-style-type: none;
+	max-width: 30em;
+	margin: auto;
+}
+
+ul#projects li {
+    margin-bottom: 1em;
+    padding: .25em;
+    background-color: #e5e5e5;
+    border: solid lightgrey 1px;
+    -moz-border-radius: 6px;
+    -webkit-border-radius: 6px;
+    border-radius: 6px;
+    font-size: x-large;
+}
+
+ul#projects li:hover {
+    background-color: #f9f9f9;
+}
+
+ul#projects a {
+    color: inherit;
+}
