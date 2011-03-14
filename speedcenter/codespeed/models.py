@@ -46,7 +46,8 @@ class Revision(models.Model):
     # TODO: Add a flag which determines whether this has already been
     #       refreshed from the VCS so we can avoid repeat queries in normal use
 
-    def get_short_commitid(self):
+    @property
+    def short_commit_id(self):
         return self.commitid[:10]
 
     def __unicode__(self):

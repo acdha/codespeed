@@ -389,7 +389,7 @@ def gettimelinedata(request, project_slug=None):
                 if res.std_dev is not None:
                     std_dev = res.std_dev
                 results.append(
-                    [str(res.revision.date), res.value, std_dev, res.revision.get_short_commitid()]
+                    [str(res.revision.date), res.value, std_dev, res.revision.short_commit_id]
                 )
             timeline['executables'][executable] = results
             append = True
