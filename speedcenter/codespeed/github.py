@@ -81,12 +81,15 @@ def getlogs(endrev, startrev):
         revision.full_clean()
         revision.save()
 
+        gh_link = revision.links.get_or_create(title="Github",
+                                                url='http://github.com%s' % commit['url'])
+
+
         logs.append({'date': date, 'message': commit['message'],
                         'body': "", # TODO: pretty-print diffs
                         'author': commit['author']['name'],
                         'author_email': commit['author']['email'],
                         'commitid': commit['id'],
-                        'short_commit_id': commit['id'][0:7],
-                        'links': {'Github': 'http://github.com%s' % commit['url']}})
+                        'short_commit_id': commit['id'][0:7]})
 
     return sorted(logs, key=lambda i: i['date'], reverse=True)
