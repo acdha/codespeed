@@ -800,6 +800,10 @@ def save_result(data):
         rev.full_clean()
         rev.save()
 
+    if 'revision_links' in data:
+        for k, v in data['revision_links'].items():
+            rev.links.get_or_create(title=k, url=v)
+
     exe, created = Executable.objects.get_or_create(
         name=data['executable'],
         project=p

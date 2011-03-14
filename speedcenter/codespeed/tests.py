@@ -217,6 +217,22 @@ class AddJSONResultsTest(TestCase):
         )
         self.assertTrue(res.value, 458)
 
+    def test_add_result_links(self):
+        """Add correct result data"""
+        data = self.data[:1]
+
+        data[0]['revision_links'] = {"Github": "http://github.com/"}
+        response = self.client.post(self.path, {'json': json.dumps(data)})
+
+        # Check that we get a success response
+        self.assertEquals(response.status_code, 202)
+        self.assertEquals(response.content, "All result data saved successfully")
+
+        r = Revision.objects.get(commitid=123)
+        self.assertEqual(r.links.count(), 1)
+        self.assertEqual(r.links.get().title, "Github")
+        self.assertEqual(r.links.get().url, "http://github.com/")
+
     def test_bad_environment(self):
         """Add result associated with non-existing environment.
            Only change one item in the list.
