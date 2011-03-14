@@ -389,16 +389,16 @@ tbody.commits tr td.date, table.revision tr .infofirst, div.author, span.note, t
 }
 
 tbody.commits tr td.date {
-	padding: 0.3em;
-	width: 5em;
-	text-align: right;
+    padding: 0.3em;
+    width: 5em;
+    text-align: right;
 }
 
 .commits pre {
-	display: block;
-	margin: 2px;
-	white-space: pre-wrap;
-	overflow: auto;
+    display: block;
+    margin: 2px;
+    white-space: pre-wrap;
+    overflow: auto;
 }
 
 a#permalink { float: right; font-size: small; }
@@ -498,9 +498,9 @@ div.footer a {
 *:first-child+html .clearfix { zoom: 1; } /* IE7 */
 
 ul#projects {
-	list-style-type: none;
-	max-width: 30em;
-	margin: auto;
+    list-style-type: none;
+    max-width: 30em;
+    margin: auto;
 }
 
 ul#projects li {
@@ -520,4 +520,5 @@ ul#projects li:hover {
 
 ul#projects a {
     color: inherit;
+    display: block;
 }
