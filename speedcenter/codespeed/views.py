@@ -754,6 +754,10 @@ def save_result(data):
         rev.full_clean()
         rev.save()
 
+    if 'links' in data:
+        for k, v in data['links'].items():
+            rev.links.objects.get_or_create(title=k, url=v)
+
     exe, created = Executable.objects.get_or_create(
         name=data['executable'],
         project=p
