@@ -24,6 +24,12 @@ class Project(models.Model):
     repo_pass = models.CharField("Repository password", blank=True, max_length=100)
     track = models.BooleanField("Track changes", default=False)
 
+    default_environment = models.ForeignKey("Environment", blank=True, null=True,
+                                            help_text="This environment will be the default option in this project's reports")
+
+    default_executable = models.ForeignKey("Executable", blank=True, null=True, related_name="project_default",
+                                           help_text="This executable will be the default option in this project's reports")
+
     def __unicode__(self):
         return self.name
 
@@ -32,6 +38,7 @@ class Project(models.Model):
         # This is nasty but a common need:
         env_pks = Result.objects.filter(revision__project=self).values_list("environment").distinct()
         return Environment.objects.filter(pk__in=env_pks)
+
 
 class Revision(models.Model):
     commitid = models.CharField(max_length=42)#git and mercurial's SHA-1 length is 40
