@@ -1,27 +1,44 @@
-<tr>
-    <th class="date infofirst">{{ object.date }}</th>
-    <td>
-        {% with object.links.all as links %}
-            {% if links|length %}
-                <ul class="inline float-right">
+{% with object.links.all as links %}
+    {% if links|length %}
+        <tr class="links">
+            <th>Links</th>
+            <td>
+                <ul class="inline">
                     {% for link in links %}
                         <li><a href="{{ link.url }}">{{ link.title }}</a></li>
                     {% endfor %}
                 </ul>
-            {% endif %}
-        {% endwith %}
+            </td>
+        </tr>
+    {% endif %}
+{% endwith %}
 
+<tr class="author">
+    <th>Author</th>
+    <td class="fn">
         {% if object.author_email %}
-            <a class="author fn" href="mailto:{{ object.author_email }}">{{ object.author }}</a>
+            <a href="mailto:{{ object.author_email }}">{{ object.author }}</a>
         {% else %}
-            <span class="author fn">{{ object.author }}</span>
-        {% endif %}
-        commited
-        <abbr class="commit-id" title="{{ object.commitid }}">{{ object.short_commit_id|default:object.commitid }}</abbr>:
-
-        <pre class="message">{{ object.message|linebreaksbr|urlize }}</pre>
-        {% if object.body %}
-            <pre class="body">{{ object.body|linebreaksbr|urlize }}</pre>
+            {{ object.author }}
         {% endif %}
     </td>
 </tr>
+
+{% if object.message %}
+    <tr class="message">
+        <th>Message</th>
+        <td>
+            <pre>{{ object.message|linebreaksbr|urlize }}</pre>
+        </td>
+    </tr>
+{% endif %}
+
+{% if object.body %}
+    <tr class="body">
+        <th>Body</th>
+
+        <td>
+            <pre>{{ object.body|linebreaksbr|urlize }}</pre>
+        </td>
+    </tr>
+{% endif %}
