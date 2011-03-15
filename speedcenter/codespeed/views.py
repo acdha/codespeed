@@ -489,21 +489,19 @@ def timeline(request, project_slug=None):
 def getchangestable(request, project_slug=None):
     try:
         project = Project.objects.get(slug=project_slug)
-        executable = project.executables.get(pk=request.GET.get('exe', None))
-        environment = Environment.objects.get(name=request.GET.get('env', None))
     except ObjectDoesNotExist:
         raise Http404()
 
     try:
-        trendconfig = int(request.GET.get('tre'))
-    except TypeError:
-        raise Http404()
-    selectedrev = get_object_or_404(Revision, commitid=request.GET.get('rev'),
-                                    project=executable.project)
+        trendconfig = int(request.GET.get('tre', None))
+        executable = project.executables.get(pk=int(request.GET['exe']))
+        environment = Environment.objects.get(name=request.GET['env'])
+        selectedrev = get_object_or_404(Revision, commitid=request.GET['rev'], project=project)
+    except (KeyError, TypeError, ValueError, ObjectDoesNotExist):
+        return HttpResponseBadRequest()
 
-    report, created = Report.objects.get_or_create(
-        executable=executable, environment=environment, revision=selectedrev
-    )
+    report, created = Report.objects.get_or_create(executable=executable, environment=environment, revision=selectedrev)
+
     tablelist = report.get_changes_table(trendconfig)
 
     if not len(tablelist):
@@ -517,13 +515,26 @@ def getchangestable(request, project_slug=None):
         'env': environment,
     }, context_instance=RequestContext(request))
 
+
 def changes(request, project_slug=None):
     if request.method != 'GET':
         return HttpResponseNotAllowed('GET')
 
     project = get_object_or_404(Project, slug=project_slug)
 
-    data = request.GET
+    if not project.environments.exists():
+        return no_environment_error()
+
+    if not project.executables.exists():
+        return no_executables_error()
+
+    try:
+        default_trend = request.GET.get("tre", None)
+        default_environment = request.GET.get("env", None)
+        default_executable = int(request.GET.get("exe", 0))
+        selected_revision = request.GET.get("rev", None)
+    except (ValueError, TypeError):
+        return HttpResponseBadRequest()
 
     # Configuration of default parameters
     defaultchangethres = 3.0
@@ -533,102 +544,27 @@ def changes(request, project_slug=None):
     if hasattr(settings, 'trend_threshold') and settings.trend_threshold is not None:
         defaulttrendthres = settings.trend_threshold
 
-    defaulttrend = 10
     trends = [5, 10, 20, 50, 100]
-    if 'tre' in data and int(data['tre']) in trends:
-        defaulttrend = int(data['tre'])
 
-    # BUG: Only list environments which have been used for this project:
-    defaultenvironment = getdefaultenvironment(project)
-    if not defaultenvironment:
-        return no_environment_error()
-    if 'env' in data:
-        try:
-            defaultenvironment = Environment.objects.get(name=data['env'])
-        except Environment.DoesNotExist:
-            pass
-    environments = Environment.objects.all()
+    if not default_environment:
+        default_environment = project.default_environment or project.environments.all()[0]
 
-    defaultexecutable = getdefaultexecutable(project)
-    if not defaultexecutable:
-        return no_executables_error()
+    if not default_executable:
+        default_executable = project.default_executable or project.executables.all()[0]
 
-    if "exe" in data:
-        try:
-            defaultexecutable = Executable.objects.get(id=int(data['exe']))
-        except Executable.DoesNotExist:
-            pass
-        except ValueError:
-            pass
-
-    baseline = getbaselineexecutables(project)
-    defaultbaseline = "+"
-    if len(baseline) > 1:
-        defaultbaseline = str(baseline[1]['executable'].id) + "+"
-        defaultbaseline += str(baseline[1]['revision'].id)
-    if "base" in data and data['base'] != "undefined":
-        try:
-            defaultbaseline = data['base']
-        except ValueError:
-            pass
-
-    # Information for template
-    executables = Executable.objects.filter(project=project)
-    revlimit = 20
-    lastrevisions = Revision.objects.filter(
-        project=project
-    ).order_by('-date')[:revlimit]
-    if not len(lastrevisions):
+    recent_revisions = project.revisions.order_by('-date')
+    if not recent_revisions:
         return no_data_found()
-
-    selectedrevision = lastrevisions[0]
-    if data.get("rev", None):
-        try:
-            selectedrevision = Revision.objects.get(
-                commitid__startswith=data['rev'], project=defaultexecutable.project
-            )
-            if not selectedrevision in lastrevisions:
-                lastrevisions = list(chain(lastrevisions))
-                lastrevisions.append(selectedrevision)
-        except Revision.DoesNotExist:
-            selectedrevision = lastrevisions[0]
-            # TODO: Consider whether this should simply be converted into a
-            # changes/<rev id>/ URL structure, which would make a 404 the more
-            # reasonable response
-        except Revision.MultipleObjectsReturned:
-            return HttpResponseBadRequest()
-
-    # This variable is used to know when the newly selected executable
-    # belongs to another project (project changed) and then trigger the
-    # repopulation of the revision selection selectbox
-    projectmatrix = {}
-    for e in executables: projectmatrix[e.id] = e.project.name
-    projectmatrix = json.dumps(projectmatrix)
-    projectlist = []
-    for p in Project.objects.filter(
-            track=True
-        ).exclude(
-            id=defaultexecutable.project.id
-        ):
-        projectlist.append(p)
-    revisionboxes = { defaultexecutable.project.name: lastrevisions }
-    for p in projectlist:
-        revisionboxes[p.name] = Revision.objects.filter(
-            project=p
-        ).order_by('-date')[:revlimit]
 
     return render_to_response('codespeed/changes.html', {
         "defaultchangethres": defaultchangethres,
-        "defaultenvironment": defaultenvironment,
-        "defaultexecutable": defaultexecutable,
-        "defaulttrend": defaulttrend,
+        "default_environment": default_environment,
+        "default_executable": default_executable,
+        "defaulttrend": default_trend,
         "defaulttrendthres": defaulttrendthres,
-        "environments": environments,
-        "executables": executables,
         "project": project,
-        "projectmatrix": projectmatrix,
-        "revisionboxes": revisionboxes,
-        "selectedrevision": selectedrevision,
+        "selected_revision": selected_revision,
+        "recent_revisions": recent_revisions,
         "trends": trends,
     }, context_instance=RequestContext(request))
 
