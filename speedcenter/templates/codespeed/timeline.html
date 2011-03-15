@@ -215,24 +215,12 @@
     $("#revisions").val({{ defaultlast }});
     $("#revisions").change(refreshContent);
 
-    //Reset all checkboxes
-    $("input:checkbox").removeAttr('checked');
-
     //Set default selected executables
     $("#baseline").val("{{ defaultbaseline }}");
     $("#baseline").change(refreshContent);
 
-    {% for checkedexecutable in checkedexecutables %}
-    $("input[name='executable']").filter('[value={{ checkedexecutable.id }}]').attr('checked', true);
-    {% endfor %}
     $("input[name='executable']").change(refreshContent);
-
-    //Set default selected benchmark
-    $("input:radio[name='benchmark']").filter('[value={{ defaultbenchmark }}]').attr('checked', true);
     $("input[name='benchmark']").change(refreshContent);
-
-    //Set default selected environment
-    $("input:radio[name='environments']").filter('[value={{ defaultenvironment.name }}]').attr('checked', true);
     $("input[name='environments']").change(refreshContent);
 
     //Add color legend to executable list
@@ -265,7 +253,7 @@
     <ul>
     {% for env in environments %}
       <li title="{{ env.os }}, {{ env.cpu }}">
-        <input id="env{{ env.name }}" type="radio" name="environments" value="{{ env.name }}" />
+        <input id="env{{ env.name }}" type="radio" name="environments" value="{{ env.name }}" {% if env == default_environment %}checked{% endif %} />
         <label for="env{{ env.name }}">{{ env }}</label>
       </li>
     {% endfor %}
@@ -277,7 +265,7 @@
   <div class="boxbody">
     <ul class="clearfix">{% for exec in executables|dictsort:"id" %}
       <li title="{{ exec.description }}"><!-- the input id != value. It is used for exeutable color order       -->
-        <input id="executable{{ forloop.counter }}" type="checkbox" name="executable" value="{{ exec.id }}" />
+        <input id="executable{{ forloop.counter }}" type="checkbox" name="executable" value="{{ exec.id }}" {% if exec in checked_executables %}checked{% endif %} />
         <label for="executable{{ forloop.counter }}">{{ exec }}</label><div class="seriescolor"></div>
       </li>{% endfor %}
     </ul>
@@ -295,13 +283,13 @@
   <div class="boxbody">{% ifnotequal benchmarks|length 1 %}
   <ul>
     <li>
-      <input id="benchmarkgrid" type="radio" name="benchmark" value="grid" />
+      <input id="benchmarkgrid" type="radio" name="benchmark" value="grid" {% if default_benchmark_name == "grid" %}checked{% endif %} />
       <label for="benchmarkgrid">Display all in a grid</label>
     </li>
   </ul>{% endifnotequal %}
   <ul>{% for bench in benchmarks|dictsort:"name" %}
     <li title="{{ bench.description }}">
-      <input id="benchmark_{{ bench.id }}" type="radio" name="benchmark" value="{{ bench.name }}" />
+      <input id="benchmark_{{ bench.id }}" type="radio" name="benchmark" value="{{ bench.name }}" {% if bench.name == default_benchmark_name %}checked{% endif %} />
       <label for="benchmark_{{ bench.id }}">{{ bench }}</label>
     </li>
     {% endfor %}

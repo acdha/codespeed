@@ -423,78 +423,63 @@ def gettimelinedata(request, project_slug=None):
         timeline_list['error'] = response
     return HttpResponse(json.dumps( timeline_list ))
 
+
 def timeline(request, project_slug=None):
     if request.method != 'GET':
         return HttpResponseNotAllowed('GET')
 
     project = get_object_or_404(Project, slug=project_slug)
 
-    data = request.GET
+    try:
+        exe_pks = [int(i) for i in request.GET.get("exe", "").split(",") if i]
 
-    # Configuration of default parameters
-    defaultenvironment = getdefaultenvironment(project)
-    if not defaultenvironment:
-        return no_environment_error()
-    if 'env' in data:
-        try:
-            defaultenvironment = Environment.objects.get(name=data['env'])
-        except Environment.DoesNotExist:
-            pass
+        defaultlast = int(request.GET.get("revs", 200))
 
-    checkedexecutables = []
-    if 'exe' in data:
-        for i in data['exe'].split(","):
-            if not i: continue
-            try:
-                checkedexecutables.append(Executable.objects.get(id=int(i)))
-            except Executable.DoesNotExist:
-                pass
+        defaultbaseline = request.GET.get("base", None)
 
-    if not checkedexecutables:
-        checkedexecutables = Executable.objects.filter(project__track=True)
+        default_benchmark_name = request.GET.get("ben", None)
+    except (TypeError, ValueError), e:
+        return HttpResponseBadRequest(e)
 
-    if not len(checkedexecutables):
+    lastrevisions = set((10, 50, 200, 1000))
+    lastrevisions.add(defaultlast)
+
+    checked_executables = Executable.objects.filter(project=project)
+    if exe_pks:
+        checked_executables = checked_executables.filter(pk__in=exe_pks)
+
+    if not len(checked_executables):
         return no_executables_error()
 
     baseline = getbaselineexecutables(project)
     defaultbaseline = None
     if len(baseline) > 1:
-        defaultbaseline = str(baseline[1]['executable'].id) + "+"
-        defaultbaseline += str(baseline[1]['revision'].id)
-    if "base" in data and data['base'] != "undefined":
-        try:
-            defaultbaseline = data['base']
-        except ValueError:
-            pass
+        defaultbaseline = "%s+%s" % (baseline[1]['executable'].id, baseline[1]['revision'].id)
 
-    lastrevisions = [10, 50, 200, 1000]
-    defaultlast = 200
-    if 'revs' in data:
-        if int(data['revs']) not in lastrevisions:
-            lastrevisions.append(data['revs'])
-        defaultlast = data['revs']
-
-    benchmarks = Benchmark.objects.all()
+    benchmarks = project.benchmarks
     if not len(benchmarks):
         return no_data_found()
-    elif len(benchmarks) == 1:
-        defaultbenchmark = benchmarks[0]
-    else:
-        defaultbenchmark = "grid"
 
-    if 'ben' in data and data['ben'] != defaultbenchmark:
-        defaultbenchmark = get_object_or_404(Benchmark, name=data['ben'])
+    if not default_benchmark_name:
+        if len(benchmarks) == 1:
+            default_benchmark_name = benchmarks[0].name
+        else:
+            default_benchmark_name = "grid"
 
     # Information for template
-    executables = Executable.objects.filter(project__track=True)
-    environments = Environment.objects.all()
+    executables = Executable.objects.filter(project=project)
+    environments = project.environments.all()
+    default_environment = project.default_environment
+    if not default_environment and len(environments):
+        default_environment = environments[0]
+
     return render_to_response('codespeed/timeline.html', {
-        'checkedexecutables': checkedexecutables,
+        'checked_executables': checked_executables,
         'defaultbaseline': defaultbaseline,
         'baseline': baseline,
-        'defaultbenchmark': defaultbenchmark,
-        'defaultenvironment': defaultenvironment,
-        'lastrevisions': lastrevisions,
+        'default_benchmark_name': default_benchmark_name,
+        'default_environment': default_environment,
+        'lastrevisions': sorted(lastrevisions),
         'defaultlast': defaultlast,
         'executables': executables,
         'benchmarks': benchmarks,

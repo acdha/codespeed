@@ -36,9 +36,14 @@ class Project(models.Model):
     @property
     def environments(self):
         # This is nasty but a common need:
-        env_pks = Result.objects.filter(revision__project=self).values_list("environment").distinct()
+        env_pks = Result.objects.filter(revision__project=self).values_list("environment", flat=True).distinct()
         return Environment.objects.filter(pk__in=env_pks)
 
+    @property
+    def benchmarks(self):
+        # This is nasty but a common need:
+        bench_pks = Result.objects.filter(revision__project=self).values_list("benchmark", flat=True).distinct()
+        return Benchmark.objects.filter(pk__in=bench_pks)
 
 class Revision(models.Model):
     commitid = models.CharField(max_length=42)#git and mercurial's SHA-1 length is 40
