@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
-from itertools import chain
+from itertools import islice
 import json
 import logging
 
@@ -110,37 +110,28 @@ def getdefaultexecutable(project):
 
     return default
 
-def getcomparisonexes(project):
-    executables = []
-    executablekeys = []
-    maxlen = 20
-    # add all tagged revs for any project
-    for exe in getbaselineexecutables(project):
-        if exe['key'] == "none":
-            continue
-        executablekeys.append(exe['key'])
-        executables.append(exe)
+def get_tagged_executables(project):
+    """
+    Return a list of executables for the latest commit and every tagged release
+    """
 
-    # add latest revs of tracked projects
-    projects = Project.objects.filter(track=True)
-    for proj in projects:
-        rev = Revision.objects.filter(project=proj).latest('date')
-        if rev.tag == "":
-            for exe in Executable.objects.filter(project=rev.project):
-                exestring = str(exe)
-                if len(exestring) > maxlen:
-                    exestring = str(exe)[0:maxlen] + "..."
-                name = exestring + " latest"
-                key = str(exe.id) + "+L"
-                executablekeys.append(key)
-                executables.append({
-                    'key': key,
-                    'executable': exe,
-                    'revision': rev,
-                    'name': name,
-                })
+    executables = list(project.executables.all())
 
-    return executables, executablekeys
+    latest_revision = project.revisions.order_by("-date")[0]
+
+    for executable in executables:
+        yield ("%s@%s" % (executable.pk, latest_revision.pk),
+               "%s Latest" % executable.name,
+               latest_revision,
+               executable)
+
+    for revision in project.revisions.exclude(pk=latest_revision.pk).exclude(tag="").order_by("-date"):
+        for executable in executables:
+            yield ("%s@%s" % (executable.pk, revision.pk),
+                   "%s %s" % (executable.name, revision.tag),
+                   revision,
+                   executable)
+
 
 def getcomparisondata(request, project_slug=None):
     if request.method != 'GET':
@@ -148,29 +139,29 @@ def getcomparisondata(request, project_slug=None):
 
     project = get_object_or_404(Project, slug=project_slug)
 
-    data = request.GET
+    compdata = {}
 
-    executables, exekeys = getcomparisonexes(project)
+    for key, label, revision, exe in get_tagged_executables(project):
+        compdata[key] = {}
 
-    compdata = {'error': "Unknown error"}
-    for exe in executables:
-        compdata[exe['key']] = {}
-        for env in Environment.objects.all():
-            compdata[exe['key']][env.id] = {}
-            for bench in Benchmark.objects.all().order_by('name'):
+        for env in project.environments.all():
+            compdata[key][env.id] = {}
+
+            for bench in project.benchmarks.order_by('name'):
                 try:
+                    # BUG: This will produce far too many queries - we should refactor it:
                     value = Result.objects.get(
                         environment=env,
-                        executable=exe['executable'],
-                        revision=exe['revision'],
+                        executable=exe,
+                        revision=revision,
                         benchmark=bench
                     ).value
                 except Result.DoesNotExist:
                     value = None
-                compdata[exe['key']][env.id][bench.id] = value
-    compdata['error'] = "None"
+                compdata[key][env.id][bench.id] = value
 
-    return HttpResponse(json.dumps( compdata ))
+    return HttpResponse(json.dumps(compdata))
+
 
 def comparison(request, project_slug=None):
     if request.method != 'GET':
@@ -178,146 +169,70 @@ def comparison(request, project_slug=None):
 
     project = get_object_or_404(Project, slug=project_slug)
 
-    data = request.GET
+    try:
+        selected_bench_pks = [int(i) for i in request.GET.get("ben", "").split(",") if i]
 
-    # Configuration of default parameters
-    # BUG: default environment, exe, etc. should be project property
-    defaultenvironment = getdefaultenvironment(project)
-    if not defaultenvironment:
+        if 'exe' in request.GET:
+            # This should be a list of "<Executable pk>@<Revision pk>" strings:
+            selected_exe_keys = [i for i in request.GET.get("exe", "").split(",") if i]
+        else:
+            selected_exe_keys = None
+
+        selected_env_pks = [int(i) for i in request.GET.get("env", "").split(",") if i]
+        selected_chart = request.GET.get("chart", "normal bars")
+        selected_baseline = request.GET.get("baseline", None)
+        direction = request.GET.get("direction", None)
+        if direction not in ('horizontal', 'vertical'):
+            direction = getattr(settings, 'chart_orientation', 'vertical')
+    except (TypeError, ValueError), e:
+        return HttpResponseBadRequest(e)
+
+    if not project.environments.exists():
         return no_environment_error()
-    if 'env' in data:
-        try:
-            defaultenvironment = Environment.objects.get(name=data['env'])
-        except Environment.DoesNotExist:
-            pass
 
-    # BUG: This needs to filter on project
-    enviros = Environment.objects.all()
-    checkedenviros = []
-    if 'env' in data:
-        for i in data['env'].split(","):
-            if not i:
-                continue
-            try:
-                checkedenviros.append(Environment.objects.get(id=int(i)))
-            except Environment.DoesNotExist:
-                pass
-    if not checkedenviros:
-        checkedenviros = enviros
-
-    if not len(Project.objects.all()):
-        return no_default_project_error()
-
-    defaultexecutable = getdefaultexecutable(project)
-
-    if not defaultexecutable:
+    if not project.executables.exists():
         return no_executables_error()
 
-    executables, exekeys = getcomparisonexes(project)
-    checkedexecutables = []
-    if 'exe' in data:
-        for i in data['exe'].split(","):
-            if not i:
-                continue
-            if i in exekeys:
-                checkedexecutables.append(i)
-    elif hasattr(settings, 'comp_executables') and\
-        settings.comp_executables:
-        for exe, rev in settings.comp_executables:
-            try:
-                exe = Executable.objects.get(name=exe)
-                key = str(exe.id) + "+"
-                if rev == "L":
-                    key += rev
-                else:
-                    rev = Revision.objects.get(commitid=rev)
-                    key += str(rev.id)
-                if key in exekeys:
-                    checkedexecutables.append(key)
-                else:
-                    #TODO: log
-                    pass
-            except Executable.DoesNotExist:
-                #TODO: log
-                pass
-            except Revision.DoesNotExist:
-                #TODO: log
-                pass
+    tagged_executables = get_tagged_executables(project)
 
-    if not checkedexecutables:
-        checkedexecutables = exekeys
-
-    units_titles = Benchmark.objects.filter(
-        benchmark_type="C"
-    ).values('units_title').distinct()
-    units_titles = [unit['units_title'] for unit in units_titles]
+    units_titles = project.benchmarks.values_list('units_title', flat=True).distinct()
     benchmarks = {}
     bench_units = {}
     for unit in units_titles:
-        # Only include benchmarks marked as cross-project
-        benchmarks[unit] = Benchmark.objects.filter(
-            benchmark_type="C"
-        ).filter(units_title=unit)
+        benchmarks[unit] = project.benchmarks.filter(units_title=unit)
         units = benchmarks[unit][0].units
         lessisbetter = benchmarks[unit][0].lessisbetter and ' (less is better)' or ' (more is better)'
         bench_units[unit] = [[b.id for b in benchmarks[unit]], lessisbetter, units]
-    checkedbenchmarks = []
-    if 'ben' in data:
-        checkedbenchmarks = []
-        for i in data['ben'].split(","):
-            if not i: continue
-            try:
-                checkedbenchmarks.append(Benchmark.objects.get(id=int(i)))
-            except Benchmark.DoesNotExist:
-                pass
-    if not checkedbenchmarks:
-        # Only include benchmarks marked as cross-project
-        checkedbenchmarks = Benchmark.objects.filter(benchmark_type="C")
+
+    if not selected_bench_pks:
+        selected_bench_pks = project.benchmarks.values_list("pk", flat=True).distinct()
+
+    if not selected_env_pks:
+        selected_env_pks = project.environments.values_list("pk", flat=True)
 
     charts = ['normal bars', 'stacked bars', 'relative bars']
     # Don't show relative charts as an option if there is only one executable
     # Relative charts need normalization
-    if len(executables) == 1: charts.remove('relative bars')
+    if project.executables.count() == 1:
+        charts.remove('relative bars')
 
-    selectedchart = charts[0]
-    if 'chart' in data and data['chart'] in charts:
-        selectedchart = data['chart']
-    elif hasattr(settings, 'chart_type') and settings.chart_type in charts:
-        selectedchart = settings.chart_type
-
-    selectedbaseline = "none"
-    if 'bas' in data and data['bas'] in exekeys:
-        selectedbaseline = data['bas']
-    elif 'bas' in data:
-        # bas is present but is none
-        pass
-    elif len(exekeys) > 1 and hasattr(settings, 'normalization') and\
-        settings.normalization:
-        # Uncheck exe used for normalization when normalization is chosen as default in the settings
-        selectedbaseline = exekeys[0]#this is the default baseline
-        try:
-            checkedexecutables.remove(selectedbaseline)
-        except ValueError:
-            pass#the selected baseline was not checked
-
-    selecteddirection = False
-    if 'hor' in data and data['hor'] == "true" or\
-        hasattr(settings, 'chart_orientation') and settings.chart_orientation == 'horizontal':
-        selecteddirection = True
+    if selected_chart not in charts and getattr(settings, 'chart_type', None) in charts:
+        selected_chart = settings.chart_type
 
     return render_to_response('codespeed/comparison.html', {
-        'checkedexecutables': checkedexecutables,
-        'checkedbenchmarks': checkedbenchmarks,
-        'checkedenviros': checkedenviros,
-        'defaultenvironment': defaultenvironment,
-        'executables': executables,
+        'project': project,
+        'selected_exe_keys': selected_exe_keys,
+        'tagged_executables': [(i, j) for i,j,k,l in islice(tagged_executables, 20)],
+        'selected_bench_pks': selected_bench_pks,
+        'selected_env_pks': selected_env_pks,
+        'default_environment': project.default_environment or project.environments[0],
+        'executables': project.executables.all(),
         'benchmarks': benchmarks,
         'bench_units': json.dumps(bench_units),
-        'enviros': enviros,
         'charts': charts,
-        'selectedbaseline': selectedbaseline,
-        'selectedchart': selectedchart,
-        'selecteddirection': selecteddirection
+        'selected_baseline': selected_baseline,
+        'selected_chart': selected_chart,
+        'direction': direction
     }, context_instance=RequestContext(request))
 
 def gettimelinedata(request, project_slug=None):
@@ -656,13 +571,13 @@ def validate_result(item):
 
     response = {}
     error    = True
-    
+
     for key in mandatory_data:
         if not key in item:
             return 'Key "' + key + '" missing from request', error
         elif key in item and item[key] == "":
             return 'Value for key "' + key + '" empty in request', error
-    
+
     # Check that the Environment exists
     try:
         e = Environment.objects.get(name=item['environment'])

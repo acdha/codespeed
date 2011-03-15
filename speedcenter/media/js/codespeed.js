@@ -1,6 +1,5 @@
-
 function permalink() {
-    window.location="?" + $.param(getConfiguration());
+    window.location = "?" + $.param(getConfiguration());
 }
 
 function readCheckbox(el) {
@@ -17,11 +16,15 @@ function getLoadText(text, h, showloader) {
     var pstyle = "";
     if (h > 0) {
         h = h - 32;
-        if(h < 80) { h = 180; }
-        else if (h > 400) { h = 400; }
+        if (h < 80) {
+            h = 180;
+        }
+        else if (h > 400) {
+            h = 400;
+        }
         pstyle = ' style="line-height:' + h + 'px;"';
     }
-    loadtext += '<p' + pstyle + '>'+ text;
+    loadtext += '<p' + pstyle + '>' + text;
     if (showloader) {
         // TODO: Rework this into CSS:
         loadtext += ' <img src="/media/images/ajax-loader.gif" align="bottom">';
@@ -33,8 +36,12 @@ function getLoadText(text, h, showloader) {
 //colors number based on a threshold
 function getColorcode(change, theigh, tlow) {
     var colorcode = "status-none";
-    if(change < tlow) { colorcode = "status-red"; }
-    else if(change > theigh) { colorcode = "status-green"; }
+    if (change < tlow) {
+        colorcode = "status-red";
+    }
+    else if (change > theigh) {
+        colorcode = "status-green";
+    }
     return colorcode;
 }
 
@@ -50,16 +57,19 @@ function renderComparisonPlot(plotid, benchmarks, exes, enviros, baseline, chart
     var axislabel = "";
     var title = "";
     var baseline_is_empty = true;
-    if (baseline == "none") {
+
+    if (!baseline) {
         baseline_is_empty = false;
-        if (chart == "stacked bars") { title = "Cumulative "; }
+        if (chart == "stacked bars") {
+            title = "Cumulative ";
+        }
         title += unit;
         axislabel = bench_units[unit][2] + bench_units[unit][1];
     } else {
         if (chart == "stacked bars") {
             title = "Cumulative " + unit + " normalized to " + $("label[for='exe_" + baseline + "']").text();
         } else if (chart == "relative bars") {
-            title =  unit + " ratio to " + $("label[for='exe_" + baseline + "']").text();
+            title = unit + " ratio to " + $("label[for='exe_" + baseline + "']").text();
         } else {
             title = unit + " normalized to " + $("label[for='exe_" + baseline + "']").text();
         }
@@ -70,9 +80,13 @@ function renderComparisonPlot(plotid, benchmarks, exes, enviros, baseline, chart
     var ticks = [];
     var series = [];
     var barcounter = 0;
-    if (chart == "stacked bars" && horizontal) { exes.reverse(); }
+    if (chart == "stacked bars" && horizontal) {
+        exes.reverse();
+    }
     if (chart == "normal bars" || chart == "relative bars") {
-        if (horizontal) { benchmarks.reverse(); }
+        if (horizontal) {
+            benchmarks.reverse();
+        }
         // Add tick labels
         for (var ben in benchmarks) {
             var benchlabel = $("label[for='benchmark_" + benchmarks[ben] + "']").text();
@@ -92,7 +106,7 @@ function renderComparisonPlot(plotid, benchmarks, exes, enviros, baseline, chart
                 series.push({'label': exe + " @ " + env});
                 var customdata = [];
                 var benchcounter = 0;
-                if (baseline != "none") {
+                if (!!baseline) {
                     if (chart == "relative bars") {
                         axislabel = "<- worse - better ->";
                     }
@@ -102,7 +116,7 @@ function renderComparisonPlot(plotid, benchmarks, exes, enviros, baseline, chart
                     barcounter++;
                     var val = compdata[exes[i]][enviros[j]][benchmarks[b]];
                     if (val !== null) {
-                        if (baseline != "none") {
+                        if (!!baseline) {
                             var baseval = compdata[baseline][enviros[j]][benchmarks[b]];
                             if (baseval === null || baseval === 0) {
                                 val = 0.0001;
@@ -148,13 +162,13 @@ function renderComparisonPlot(plotid, benchmarks, exes, enviros, baseline, chart
                     var env = $("label[for='env_" + enviros[j] + "']").text();
                     var val = compdata[exes[i]][enviros[j]][benchmarks[b]];
                     if (val !== null) {
-                        if (baseline != "none") {
+                        if (!!baseline) {
                             var baseval = compdata[baseline][enviros[j]][benchmarks[b]];
                             if (baseval === null || baseval === 0) {
                                 var benchlabel = $("label[for='benchmark_" + benchmarks[b] + "']").text();
                                 var baselinelabel = $("label[for='exe_" + baseline + "']").text();
-                                var msg = "<strong>"+ title + "</strong>" + "<br><br>";
-                                msg += "Could not render plot because baseline "+baselinelabel+" has empty results for benchmark " + benchlabel;
+                                var msg = "<strong>" + title + "</strong>" + "<br><br>";
+                                msg += "Could not render plot because baseline " + baselinelabel + " has empty results for benchmark " + benchlabel;
                                 return abortRender(plotid, msg);
                                 val = 0.0001;
                             } else {
@@ -179,8 +193,8 @@ function renderComparisonPlot(plotid, benchmarks, exes, enviros, baseline, chart
 
     if (baseline_is_empty) {
         var baselinelabel = $("label[for='exe_" + baseline + "']").text();
-        var msg = "<strong>"+ title + "</strong>" + "<br><br>";
-        msg += "Could not render plot because baseline "+baselinelabel+" is empty";
+        var msg = "<strong>" + title + "</strong>" + "<br><br>";
+        msg += "Could not render plot because baseline '" + baselinelabel + "' is empty";
         return abortRender(plotid, msg);
         return -1;
     }
@@ -222,22 +236,25 @@ function renderComparisonPlot(plotid, benchmarks, exes, enviros, baseline, chart
         if (chart == "relative bars") {
             plotoptions.axes.xaxis.min = null;
             plotoptions.axes.xaxis.tickOptions = {formatString:'%.1fx'};
-        } else if (chart =="stacked bars") {
+        } else if (chart == "stacked bars") {
 //             plotoptions.axes.xaxis.min = null;
             // Not good when there is a 0 bar. It even shows negative bars when all bars are 0
         }
 
         // Determine optimal height
-        if (chart =="stacked bars") {
-            h = 90 + ticks.length * (plotoptions.seriesDefaults.rendererOptions.barPadding*2 + barWidth);
+        if (chart == "stacked bars") {
+            h = 90 + ticks.length * (plotoptions.seriesDefaults.rendererOptions.barPadding * 2 + barWidth);
         } else {
-            h = barcounter * (plotoptions.seriesDefaults.rendererOptions.barPadding*2 + barWidth) + benchcounter * plotoptions.seriesDefaults.rendererOptions.barMargin * 2;
+            h = barcounter * (plotoptions.seriesDefaults.rendererOptions.barPadding * 2 + barWidth) + benchcounter * plotoptions.seriesDefaults.rendererOptions.barMargin * 2;
         }
         // Adjust plot height
         if (h > 700) {
-            h = h/2;
-            if (h < 700) { h = 700; }
-            else if (h > 2000) { h = 2000; }
+            h = h / 2;
+            if (h < 700) {
+                h = 700;
+            } else if (h > 2000) {
+                h = 2000;
+            }
             plotoptions.seriesDefaults.rendererOptions.barPadding = 0;
             plotoptions.seriesDefaults.rendererOptions.barMargin = 8;
             plotoptions.seriesDefaults.shadow = false;
@@ -272,7 +289,7 @@ function renderComparisonPlot(plotid, benchmarks, exes, enviros, baseline, chart
             }
         };
 
-        w = barcounter * (plotoptions.seriesDefaults.rendererOptions.barPadding*2 + barWidth) + benchcounter * plotoptions.seriesDefaults.rendererOptions.barMargin * 2 + 60;
+        w = barcounter * (plotoptions.seriesDefaults.rendererOptions.barPadding * 2 + barWidth) + benchcounter * plotoptions.seriesDefaults.rendererOptions.barMargin * 2 + 60;
         h = plotheight;
         // Check if calculated width is greater than actually available width
         if (w > plotwidth + 75) {
@@ -308,8 +325,11 @@ function renderComparisonPlot(plotid, benchmarks, exes, enviros, baseline, chart
 
     // determine conditions for rendering the legend outside the plot area
     var offplot = false;
-    if (!horizontal && series.length > 4) { offplot = true; }
-    else if (horizontal && series.length > 2*ticks.length) { offplot = true; }
+    if (!horizontal && series.length > 4) {
+        offplot = true;
+    } else if (horizontal && series.length > 2 * ticks.length) {
+        offplot = true;
+    }
 
     if (offplot) {
         // Move legend outside plot area to unclutter
@@ -318,10 +338,12 @@ function renderComparisonPlot(plotid, benchmarks, exes, enviros, baseline, chart
             labels.push(series[l].label.length);
         }
 
-        var offset = 55 + Math.max.apply( Math, labels ) * 5.4;
+        var offset = 55 + Math.max.apply(Math, labels) * 5.4;
         plotoptions.legend.xoffset = -offset;
         $("#" + plotid).css("margin-right", offset + 10);
-        if (w + offset > plotwidth) { w = plotwidth - offset -20; }
+        if (w + offset > plotwidth) {
+            w = plotwidth - offset - 20;
+        }
     } else if (!horizontal && ticks.length <= 2) {
         plotoptions.legend = {show: true, location: 'se'};
     }
