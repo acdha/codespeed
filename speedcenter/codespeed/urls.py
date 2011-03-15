@@ -7,15 +7,13 @@ from speedcenter.codespeed.models import Project
 
 feeds = { 'latest': LatestEntries }
 
-
 urlpatterns = patterns('',
-    url(r'^$', 'django.views.generic.list_detail.object_list', {"queryset": Project.objects.all()}),
-    (r'^about/$', direct_to_template, {'template': 'about.html'}),
-    # RSS for reports
-    url(r'^feeds/(?P<url>.*)/$', 'django.contrib.syndication.views.feed',
-        {'feed_dict': feeds},
-        name="feeds"),
-)
+                       url(r'^$', 'django.views.generic.list_detail.object_list', {"queryset": Project.objects.all()}),
+                       url(r'^about/$', direct_to_template, {'template': 'about.html'}, name="about-site"),
+                       # RSS for reports
+                       url(r'^feeds/(?P<url>.*)/$', 'django.contrib.syndication.views.feed',
+                           {'feed_dict': feeds}, name="feeds"),
+                       )
 
 urlpatterns += patterns('speedcenter.codespeed.views',
     url(r'^(?P<project_slug>[^/]+)/$',                 'home', name="project-detail"),
